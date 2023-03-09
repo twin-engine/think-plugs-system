@@ -1,0 +1,30 @@
+{
+  "type": "composer-plugin",
+  "name": "rotoos/think-install",
+  "description": "",
+  "authors": [
+    {
+      "name": "rotoos",
+      "email": "87291030@qq.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "think\\admin\\install\\": "src"
+    }
+  },
+  "require": {
+    "php": ">=7.2",
+    "ext-json": "*",
+    "symfony/process": "^5.4 || ^6.0 || *",
+    "composer-plugin-api": "^1.0||^2.0 || *"
+  },
+  "require-dev": {
+    "composer/composer": "^1.0||^2.0"
+  },
+  "extra": {
+    "class": [
+      "think\\admin\\install\\Service"
+    ]
+  }
+}
