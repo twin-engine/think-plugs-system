@@ -1,0 +1,41 @@
+{
+  "type": "think-admin-plugin",
+  "name": "rotoos/think-plugs-system",
+  "license": "Apache-2.0",
+  "description": "System Plugin for DeAdmin",
+  "authors": [
+    {
+      "name": "rotoos",
+      "email": "87291030@qq.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.1",
+    "ext-json": "*",
+    "topthink/framework": "^6.0",
+    "topthink/think-view": "^1.0",
+    "zoujingli/ip2region": "^1.0||^2.0",
+    "zoujingli/think-install": "^1.0||dev-master",
+    "rotoos/think-core": "^6.0",
+    "rotoos/think-plugs-config": "^1.0||dev-master"
+  },
+  "extra": {
+    "plugin": {
+      "copy": {
+        "src": "!app/system",
+        "stc/database": "database/migrations"
+      },
+      "clear": true
+    },
+    "think": {
+      "services": [
+        "app\\system\\Service"
+      ]
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "zoujingli/think-install": true
+    }
+  }
+}
