@@ -10,6 +10,13 @@ use Composer\Repository\InstalledRepositoryInterface;
 
 class Installer extends LibraryInstaller
 {
+    public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
+    {
+        return parent::install($repo, $package)->then(function () use ($package) {
+            $this->copyStaticFiles($package);
+        });
+    }
+
     public function update(InstalledRepositoryInterface $repo, PackageInterface $initial, PackageInterface $target)
     {
         if (is_dir($this->getInstallPath($target))) {
@@ -18,6 +25,16 @@ class Installer extends LibraryInstaller
             });
         } else {
             return $this->install($repo, $target);
+        }
+    }
+
+    public function isInstalled(InstalledRepositoryInterface $repo, PackageInterface $package)
+    {
+        $extra = $package->getExtra();
+        if (empty($extra['plugin']['clear'])) {
+            return parent::isInstalled($repo, $package);
+        } else {
+            return true;
         }
     }
 
@@ -97,23 +114,6 @@ class Installer extends LibraryInstaller
                     $this->io->error("  > {$exception->getMessage()}");
                 }
             }
-        }
-    }
-
-    public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
-    {
-        return parent::install($repo, $package)->then(function () use ($package) {
-            $this->copyStaticFiles($package);
-        });
-    }
-
-    public function isInstalled(InstalledRepositoryInterface $repo, PackageInterface $package)
-    {
-        $extra = $package->getExtra();
-        if (empty($extra['plugin']['clear'])) {
-            return parent::isInstalled($repo, $package);
-        } else {
-            return true;
         }
     }
 

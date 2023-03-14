@@ -73,6 +73,14 @@ class Service implements PluginInterface
         }
     }
 
+    public function deactivate(Composer $composer, IOInterface $io)
+    {
+    }
+
+    public function uninstall(Composer $composer, IOInterface $io)
+    {
+    }
+
     /**
      * 增加插件服务 ( 需上报应用标识信息 )
      * @param \Composer\Composer $composer
@@ -81,12 +89,12 @@ class Service implements PluginInterface
     private function addServer(Composer $composer): Composer
     {
         $token = base64_encode(json_encode([
-            Support::getCpuId(), Support::getMacId(), Support::getSysId(), php_uname()
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            Support::getCpuId(), Support::getMacId(), Support::getSysId(), Support::getUname()
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: 'unknow');
         $manager = $composer->getRepositoryManager();
         $manager->prependRepository($manager->createRepository('composer', [
-            'url' => Support::getServer() . 'packages.json',
-            'options' => ['http' => ['header' => ["Authorization: Bearer {$token}"]]],
+            'url'       => Support::getServer() . 'packages.json',
+            'options'   => ['http' => ['header' => ["Authorization: Bearer {$token}"]]],
             'canonical' => false,
         ]));
         return $composer;
@@ -106,13 +114,5 @@ class Service implements PluginInterface
         ], true);
         $header = '// Automatically Generated At: ' . date('Y-m-d H:i:s') . PHP_EOL . 'declare(strict_types=1);';
         @file_put_contents('vendor/binarys.php', '<?php' . PHP_EOL . $header . PHP_EOL . "return {$export};");
-    }
-
-    public function deactivate(Composer $composer, IOInterface $io)
-    {
-    }
-
-    public function uninstall(Composer $composer, IOInterface $io)
-    {
     }
 }

@@ -19,7 +19,7 @@ abstract class Support
      */
     public static function getServer(): string
     {
-        return base64_decode('aHR0cHM6Ly9wbHVnaW4udGhpbmthZG1pbi50b3Av');
+        return base64_decode('aHR0cHM6Ly9saWNlbnNlLnNxbS5sYS9hdXRo');
     }
 
     /**
@@ -50,11 +50,11 @@ abstract class Support
         static $cpuid;
         if ($cpuid) return $cpuid;
         $command = self::isWin() ? 'wmic cpu get ProcessorID' : 'dmidecode -t processor | grep ID';
-        $process = Process::fromShellCommandline($command);
-        $process->run(static function ($type, $line) use ($process, &$cpuid) {
-            if (preg_match('|[0-9A-F]{16}|', preg_replace('#[^:\w\n]#', '', $line), $match)) {
-                ($cpuid = strtoupper($match[0])) && $process->stop();
+        self::exec($command, static function ($type, $line) use (&$cpuid) {
+            if (preg_match('|[0-9A-F]{16}|', $line, $match)) {
+                return !!($cpuid = strtoupper($match[0]));
             }
+            return false;
         });
         if (empty($cpuid)) {
             $tmpfile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . '.thinkadmin.cpuid';
@@ -67,15 +67,6 @@ abstract class Support
     }
 
     /**
-     * 判断运行环境
-     * @return boolean
-     */
-    public static function isWin(): bool
-    {
-        return defined('PHP_WINDOWS_VERSION_BUILD');
-    }
-
-    /**
      * 获取MAC地址
      * @return string
      */
@@ -83,12 +74,12 @@ abstract class Support
     {
         static $macid;
         if ($macid) return $macid;
-        $process = Process::fromShellCommandline(self::isWin() ? 'ipconfig /all' : 'ifconfig -a');
-        $process->run(static function ($type, $line) use ($process, &$macid) {
-            $value = preg_replace('#[^:\-\w\n]#', '', $line);
-            if (preg_match("#((00|FF)[:-]){5}(00|FF)#i", $value)) return;
-            if (preg_match('#([0-9A-F]{2}[:-]){5}[0-9A-F]{2}#', $value, $match)) {
-                ($macid = $match[0]) && $process->stop();
+        self::exec(self::isWin() ? 'ipconfig /all' : 'ifconfig -a', static function ($type, $line) use (&$macid) {
+            if (preg_match("#((00|FF)[:-]){5}(00|FF)#i", $line)) return false;
+            if (preg_match('#([0-9A-F]{2}[:-]){5}[0-9A-F]{2}#', $line, $match)) {
+                return !!($macid = $match[0]);
+            } else {
+                return false;
             }
         });
         if (empty($macid)) {
@@ -98,6 +89,48 @@ abstract class Support
             }
         }
         return $macid = strtoupper(strtr($macid, ':', '-'));
+    }
+
+    /**
+     * 获取系统信息
+     * @return string
+     */
+    public static function getUname(): string
+    {
+        return self::text2utf8(php_uname());
+    }
+
+    /**
+     * 判断运行环境
+     * @return boolean
+     */
+    public static function isWin(): bool
+    {
+        return defined('PHP_WINDOWS_VERSION_BUILD');
+    }
+
+    /**
+     * 执行回调处理
+     * @param string $command
+     * @param ?callable $callabel
+     * @return string
+     */
+    public static function exec(string $command, callable $callabel = null): string
+    {
+        if (method_exists(Process::class, 'fromShellCommandline')) {
+            $process = Process::fromShellCommandline($command);
+        } else {
+            $process = new Process([]);
+            if (method_exists($process, 'setCommandLine')) {
+                $process->setCommandLine($command);
+            }
+        }
+        $process->run(static function ($type, $line) use ($process, $callabel) {
+            if (is_callable($callabel) && $callabel($type, self::text2utf8($line)) === true) {
+                $process->stop();
+            }
+        });
+        return self::text2utf8($process->getOutput());
     }
 
     /**
@@ -113,5 +146,24 @@ abstract class Support
         return join('-', array_map(function ($v) {
             return sprintf('%02X', $v);
         }, $attr));
+    }
+
+    /**
+     * 文本内容转码
+     * @param string $text 文本内容
+     * @return string
+     */
+    private static function text2utf8(string $text): string
+    {
+        [$first2, $first4] = [substr($text, 0, 2), substr($text, 0, 4)];
+        if ($first4 === chr(0x00) . chr(0x00) . chr(0xFE) . chr(0xFF)) $ft = 'UTF-32BE';
+        elseif ($first4 === chr(0xFF) . chr(0xFE) . chr(0x00) . chr(0x00)) $ft = 'UTF-32LE';
+        elseif ($first2 === chr(0xFF) . chr(0xFE)) $ft = 'UTF-16LE';
+        elseif ($first2 === chr(0xFE) . chr(0xFF)) $ft = 'UTF-16BE';
+        try {
+            return mb_convert_encoding($text, 'UTF-8', $ft ?? mb_detect_encoding($text));
+        } catch (\Exception|\Error $exception) {
+            return $text;
+        }
     }
 }
