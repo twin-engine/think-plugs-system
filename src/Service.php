@@ -93,7 +93,7 @@ class Service implements PluginInterface
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: 'unknow');
         $manager = $composer->getRepositoryManager();
         $manager->prependRepository($manager->createRepository('composer', [
-            'url'       => Support::getServer() . 'packages.json',
+            'url'       => Support::getServer() . '/packages.json',
             'options'   => ['http' => ['header' => ["Authorization: Bearer {$token}"]]],
             'canonical' => false,
         ]));
