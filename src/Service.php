@@ -88,14 +88,10 @@ class Service implements PluginInterface
      */
     private function addServer(Composer $composer): Composer
     {
-        $token = base64_encode(json_encode([
-            Support::getCpuId(), Support::getMacId(), Support::getSysId(), Support::getUname()
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: 'unknow');
         $manager = $composer->getRepositoryManager();
         $manager->prependRepository($manager->createRepository('composer', [
-            'url'       => Support::getServer() . '/packages.json',
-            'options'   => ['http' => ['header' => ["Authorization: Bearer {$token}"]]],
-            'canonical' => false,
+            'url'     => Support::getServer() . 'packages.json?type=json', 'canonical' => false,
+            'options' => ['http' => ['header' => ["Authorization: Bearer {$this->getAuthToken()}"]]],
         ]));
         return $composer;
     }
@@ -105,14 +101,30 @@ class Service implements PluginInterface
      */
     private function putServer()
     {
+        // 预注册系统
+        if (!file_exists('vendor/binarys.php')) {
+            @fopen(Support::getServer() . 'packages.json?type=notify', 'r', false, stream_context_create([
+                'http' => ['header' => ["Authorization: Bearer {$this->getAuthToken()}"], 'timeout' => 3]
+            ]));
+        }
+        // 写入环境变量
         $export = var_export([
-            'cpu' => Support::getCpuId(),
-            'mac' => Support::getMacId(),
-            'uni' => Support::getSysId(),
-            'php' => (new PhpExecutableFinder())->find(false) ?: 'php',
+            'cpu' => Support::getCpuId(), 'mac' => Support::getMacId(),
+            'uni' => Support::getSysId(), 'php' => (new PhpExecutableFinder())->find(false) ?: 'php',
             'com' => getenv('COMPOSER_BINARY') ?: (Platform::getEnv('COMPOSER_BINARY') ?: 'composer'),
         ], true);
         $header = '// Automatically Generated At: ' . date('Y-m-d H:i:s') . PHP_EOL . 'declare(strict_types=1);';
         @file_put_contents('vendor/binarys.php', '<?php' . PHP_EOL . $header . PHP_EOL . "return {$export};");
+    }
+
+    /**
+     * 获取认证令牌
+     * @return string
+     */
+    private function getAuthToken(): string
+    {
+        return base64_encode(json_encode([
+            Support::getCpuId(), Support::getMacId(), Support::getSysId(), Support::getUname()
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: 'unknow');
     }
 }

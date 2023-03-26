@@ -57,7 +57,7 @@ abstract class Support
             return false;
         });
         if (empty($cpuid)) {
-            $tmpfile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . '.deadmin.cpuid';
+            $tmpfile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . '.thinkadmin.cpuid';
             if (!is_file($tmpfile) || !($cpuid = file_get_contents($tmpfile))) {
                 $cpuid = strtoupper(substr(md5(uniqid(strval(rand(1, 100)))), -16));
                 @file_put_contents($tmpfile, $cpuid);
@@ -83,7 +83,7 @@ abstract class Support
             }
         });
         if (empty($macid)) {
-            $tmpfile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . '.deadmin.macid';
+            $tmpfile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . '.thinkadmin.macid';
             if (!is_file($tmpfile) || !($macid = file_get_contents($tmpfile))) {
                 @file_put_contents($tmpfile, $macid = static::randMacAddress());
             }
