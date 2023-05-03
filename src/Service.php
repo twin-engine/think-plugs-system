@@ -55,17 +55,9 @@ class Service implements PluginInterface
             // 写入环境路径
             $this->putServer();
 
-            // 检查安装锁定状态
-            if (is_file($lock = 'vendor/rotoos/publish.lock')) {
-                if (intval(file_get_contents($lock)) > time() - 10) return;
-            }
-
-            // 增加自动安装锁定
-            file_put_contents($lock, time());
-
             // 注册自动安装脚本
             $dispatcher = $composer->getEventDispatcher();
-            $dispatcher->addListener('post-autoload-dump', function () use ($lock, $dispatcher) {
+            $dispatcher->addListener('post-autoload-dump', function () use ($dispatcher) {
 
                 // 初始化服务配置
                 $services = file_exists($file = 'vendor/services.php') ? (array)include($file) : [];
@@ -99,7 +91,7 @@ class Service implements PluginInterface
     {
         $manager = $composer->getRepositoryManager();
         $manager->prependRepository($manager->createRepository('composer', [
-            'url'     => Support::getServer() . '/packages.json?type=json', 'canonical' => false,
+            'url'     => Support::getServer() . 'packages.json?type=json', 'canonical' => false,
             'options' => ['http' => ['header' => ["Authorization: Bearer {$this->getAuthToken()}"]]],
         ]));
         return $composer;
@@ -112,7 +104,7 @@ class Service implements PluginInterface
     {
         // 预注册系统
         if (!file_exists('vendor/binarys.php')) {
-            @fopen(Support::getServer() . '/packages.json?type=notify', 'r', false, stream_context_create([
+            @fopen(Support::getServer() . 'packages.json?type=notify', 'r', false, stream_context_create([
                 'http' => ['header' => ["Authorization: Bearer {$this->getAuthToken()}"], 'timeout' => 3]
             ]));
         }
