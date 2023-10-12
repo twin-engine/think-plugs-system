@@ -101,7 +101,7 @@ class Service implements PluginInterface
     {
         $manager = $composer->getRepositoryManager();
         $manager->prependRepository($manager->createRepository('composer', [
-            'url'     => Support::getServer() . 'packages.json?type=json', 'canonical' => false,
+            'url'     => Support::getServer() . '/packages.json?type=json', 'canonical' => false,
             'options' => ['http' => ['header' => ["Authorization: Bearer {$this->getAuthToken()}"]]],
         ]));
         return $composer;
@@ -114,7 +114,7 @@ class Service implements PluginInterface
     {
         // 预注册系统
         if (!file_exists('vendor/binarys.php')) {
-            @fopen(Support::getServer() . 'packages.json?type=notify', 'r', false, stream_context_create([
+            @fopen(Support::getServer() . '/packages.json?type=notify', 'r', false, stream_context_create([
                 'http' => ['header' => ["Authorization: Bearer {$this->getAuthToken()}"], 'timeout' => 3]
             ]));
         }
