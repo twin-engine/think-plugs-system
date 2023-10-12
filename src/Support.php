@@ -91,6 +91,7 @@ abstract class Support
         return $macid = strtoupper(strtr($macid, ':', '-'));
     }
 
+
     /**
      * 获取系统信息
      * @return string

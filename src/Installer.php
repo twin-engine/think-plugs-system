@@ -10,6 +10,11 @@ use Composer\Repository\InstalledRepositoryInterface;
 
 class Installer extends LibraryInstaller
 {
+    /**
+     * @param InstalledRepositoryInterface $repo
+     * @param PackageInterface $package
+     * @return \React\Promise\FulfilledPromise|\React\Promise\Promise|\React\Promise\PromiseInterface|\React\Promise\RejectedPromise|null
+     */
     public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
         return parent::install($repo, $package)->then(function () use ($package) {
@@ -22,6 +27,11 @@ class Installer extends LibraryInstaller
         });
     }
 
+    /**
+     * @param InstalledRepositoryInterface $repo
+     * @param PackageInterface $package
+     * @return \React\Promise\FulfilledPromise|\React\Promise\Promise|\React\Promise\PromiseInterface|\React\Promise\RejectedPromise|null
+     */
     public function uninstall(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
         if (($extra = $package->getExtra()) && !empty($extra['plugin']['event'])) {
@@ -32,6 +42,12 @@ class Installer extends LibraryInstaller
         return parent::uninstall($repo, $package);
     }
 
+    /**
+     * @param InstalledRepositoryInterface $repo
+     * @param PackageInterface $initial
+     * @param PackageInterface $target
+     * @return \React\Promise\FulfilledPromise|\React\Promise\Promise|\React\Promise\PromiseInterface|\React\Promise\RejectedPromise|null
+     */
     public function update(InstalledRepositoryInterface $repo, PackageInterface $initial, PackageInterface $target)
     {
         if (is_dir($this->getInstallPath($target))) {
@@ -43,6 +59,11 @@ class Installer extends LibraryInstaller
         }
     }
 
+    /**
+     * @param InstalledRepositoryInterface $repo
+     * @param PackageInterface $package
+     * @return bool
+     */
     public function isInstalled(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
         $extra = $package->getExtra();
@@ -53,6 +74,10 @@ class Installer extends LibraryInstaller
         }
     }
 
+    /**
+     * @param PackageInterface $package
+     * @return mixed|string
+     */
     public function getInstallPath(PackageInterface $package)
     {
         if ($this->composer->getPackage()->getType() === 'project') {
@@ -64,6 +89,10 @@ class Installer extends LibraryInstaller
         return parent::getInstallPath($package);
     }
 
+    /**
+     * @param PackageInterface $package
+     * @return void
+     */
     protected function copyStaticFiles(PackageInterface $package)
     {
         if ($this->composer->getPackage()->getType() === 'project') {

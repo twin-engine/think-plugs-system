@@ -74,10 +74,20 @@ class Service implements PluginInterface
         }
     }
 
+    /**
+     * @param Composer $composer
+     * @param IOInterface $io
+     * @return void
+     */
     public function deactivate(Composer $composer, IOInterface $io)
     {
     }
 
+    /**
+     * @param Composer $composer
+     * @param IOInterface $io
+     * @return void
+     */
     public function uninstall(Composer $composer, IOInterface $io)
     {
     }
