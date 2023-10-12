@@ -15,17 +15,8 @@ class Installer extends LibraryInstaller
         return parent::install($repo, $package)->then(function () use ($package) {
             $this->copyStaticFiles($package);
             if (($extra = $package->getExtra()) && !empty($extra['plugin']['event'])) {
-                $path = $this->getInstallPath($package);
-                foreach ((array)$extra['plugin']['event'] as $file => $class) {
-                    if (is_string($class) && is_string($file)) {
-                        class_exists($class) || is_file($file = "{$path}/{$file}") && include_once($file);
-                        if (class_exists($class) && method_exists($class, 'onInstall')) {
-                            $this->io->write("\r  > Exec Install Event Done: <info>{$class}::onInstall() </info> \033[K");
-                            $class::onInstall();
-                        } else {
-                            $this->io->write("\r  > Exec Install Event Fail: <info>{$class}::onInstall() </info> \033[K");
-                        }
-                    }
+                foreach ((array)$extra['plugin']['event'] as $event) if (class_exists($event)) {
+                    method_exists($event, 'onInstall') && $event::onInstall();
                 }
             }
         });
@@ -34,17 +25,8 @@ class Installer extends LibraryInstaller
     public function uninstall(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
         if (($extra = $package->getExtra()) && !empty($extra['plugin']['event'])) {
-            $path = $this->getInstallPath($package);
-            foreach ((array)$extra['plugin']['event'] as $file => $class) {
-                if (is_string($class) && is_string($file)) {
-                    class_exists($class) || is_file($file = "{$path}/{$file}") && include_once($file);
-                    if (class_exists($class) && method_exists($class, 'onRemove')) {
-                        $this->io->write("\r  > Exec Remove Event Done: <info>{$class}::onRemove() </info> \033[K");
-                        $class::onRemove();
-                    } else {
-                        $this->io->write("\r  > Exec Remove Event Fail: <info>{$class}::onRemove() </info> \033[K");
-                    }
-                }
+            foreach ((array)$extra['plugin']['event'] as $event) if (class_exists($event)) {
+                method_exists($event, 'onRemove') && $event::onRemove();
             }
         }
         return parent::uninstall($repo, $package);
@@ -105,13 +87,7 @@ class Installer extends LibraryInstaller
                 foreach ((array)$extra['plugin']['copy'] as $source => $target) {
 
                     // 是否为绝对复制模式
-                    $force = $target[0] === '!' && file_exists($target = substr($target, 1));
-
-                    // 源文件位置，若不存在直接跳过
-                    if (!file_exists($sfile = $installPath . DIRECTORY_SEPARATOR . $source)) continue;
-
-                    // 检查目标文件，若已经存在直接跳过
-                    if (is_file($sfile) && is_file($target) && md5_file($sfile) === md5_file($target)) continue;
+                    $isforce = $target[0] === '!' && file_exists($target = substr($target, 1));
 
                     // 如果目标目录或其上级目录下存在 ignore 文件则跳过复制
                     if (file_exists(dirname($target) . '/ignore') || file_exists(rtrim($target, '\\/') . "/ignore")) {
@@ -119,15 +95,23 @@ class Installer extends LibraryInstaller
                         continue;
                     }
 
-                    // 绝对复制时需要先删再写入
-                    if (($action = $force && file_exists($target) ? 'Push' : 'Copy') === 'Push') {
-                        is_file($target) ? $this->filesystem->unlink($target) : $this->filesystem->removeDirectoryPhp($target);
+                    // 绝对复制时需要先删除目标文件或目录
+                    $action = 'Copy';
+                    if ($isforce && file_exists($target)) {
+                        $action = 'Push';
+                        if (is_file($target)) {
+                            $this->filesystem->unlink($target);
+                        } else {
+                            $this->filesystem->removeDirectoryPhp($target);
+                        }
                     }
 
                     // 执行复制操作，将原文件或目录复制到目标位置
-                    $this->io->write("\r  > {$action} Source <info>{$source} </info>to <info>{$target} </info>");
-                    file_exists(dirname($target)) || mkdir(dirname($target), 0755, true);
-                    $this->filesystem->copy($sfile, $target);
+                    if (file_exists($sfile = $installPath . DIRECTORY_SEPARATOR . $source)) {
+                        $this->io->write("\r  > {$action} Source <info>{$source} </info>to <info>{$target} </info>");
+                        file_exists(dirname($target)) || mkdir(dirname($target), 0755, true);
+                        $this->filesystem->copy($sfile, $target);
+                    }
                 }
             }
 
@@ -135,15 +119,15 @@ class Installer extends LibraryInstaller
             if (!empty($extra['plugin']['clear'])) {
                 $rootPath = dirname($this->vendorDir);
                 if (stripos($installPath, $rootPath) === 0) {
-                    try {
-                        $showPath = substr($installPath, strlen($rootPath) + 1);
-                        $this->io->write("\r  > Clear Vendor <info>{$showPath} </info>");
-                        $this->filesystem->removeDirectoryPhp($installPath);
-                    } catch (\Exception|\RuntimeException $exception) {
-                        $this->io->error("\r  > {$exception->getMessage()}");
-                    }
+                    $showPath = substr($installPath, strlen($rootPath) + 1);
                 } else {
-                    $this->io->write("\r  > Skip Clear <info>{$installPath} </info>");
+                    $showPath = $installPath;
+                }
+                try {
+                    $this->io->write("\r  > Clear Vendor <info>{$showPath} </info>");
+                    $this->filesystem->removeDirectoryPhp($installPath);
+                } catch (\Exception|\RuntimeException $exception) {
+                    $this->io->error("\r  > {$exception->getMessage()}");
                 }
             }
         }
